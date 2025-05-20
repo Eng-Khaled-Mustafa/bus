@@ -115,6 +115,10 @@ scheduled_data['DailyCount'] = scheduled_data.groupby('Date').cumcount() + 1
 scheduled_data = scheduled_data[scheduled_data['DailyCount'] <= 10]
 
 # إعادة حساب عدد الدخول للكراج
+
+# إشعار إذا تم استبعاد الباص الحالي من الجدول النهائي
+if selected_bus not in scheduled_data['BusID'].values:
+    st.warning(f"🚨 Bus {selected_bus} has high priority but was not scheduled (other buses had higher priority on those days).")
 garage_counts = scheduled_data.groupby('BusID').size().reset_index(name='GarageEntries')
 
 # ---- Bar chart for garage entries ----
