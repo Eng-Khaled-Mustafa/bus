@@ -88,8 +88,12 @@ km = st.sidebar.slider("KM Today", 50, 400, int(default_row['KM_Today']))
 
 encoded_error = le.transform([error])[0]
 new_data = pd.DataFrame([[temp, oil, rpm, encoded_error, km]], columns=['EngineTemp', 'OilPressure', 'RPM', 'ErrorCode', 'KM_Today'])
-new_prob = (
-    0.3 * (temp / 120) +
+new_prob = round(
+    0.35 * (temp / 120) +
+    0.35 * (1 - oil / 5) +
+    0.15 * (rpm / 2500) +
+    0.15 * (1 if error != 'None' else 0), 4
+) +
     0.3 * (1 - oil / 5) +
     0.2 * (rpm / 2500) +
     0.2 * (1 if error != 'None' else 0)
@@ -105,8 +109,12 @@ updated_data.loc[updated_data['BusID'] == selected_bus,
 
 # Predict on updated data
 X_updated = updated_data[['EngineTemp', 'OilPressure', 'RPM', 'ErrorCode', 'KM_Today']]
-updated_data['Predicted'] = (
-    0.3 * (updated_data['EngineTemp'] / 120) +
+updated_data['Predicted'] = round(
+    0.35 * (updated_data['EngineTemp'] / 120) +
+    0.35 * (1 - updated_data['OilPressure'] / 5) +
+    0.15 * (updated_data['RPM'] / 2500) +
+    0.15 * (updated_data['ErrorCode'] != le.transform(['None'])[0]).astype(float), 4
+) +
     0.3 * (1 - updated_data['OilPressure'] / 5) +
     0.2 * (updated_data['RPM'] / 2500) +
     0.2 * (updated_data['ErrorCode'] != le.transform(['None'])[0]).astype(float)
@@ -131,7 +139,9 @@ if total_entries == 0:
 # ---- Bar chart ----
 st.subheader("📊 Garage Entry Counts for All Buses")
 fig, ax = plt.subplots(figsize=(12, 6))
-ax.bar(garage_counts['BusID'], garage_counts['GarageEntries'], color='skyblue')
+colors = plt.cm.tab20.colors
+bar_colors = [colors[i % len(colors)] for i in range(len(garage_counts))]
+ax.bar(garage_counts['BusID'], garage_counts['GarageEntries'], color=bar_colors)
 ax.set_title("Number of Times Each Bus Enters Garage (Max 10/day)")
 ax.set_xlabel("Bus ID")
 ax.set_ylabel("Garage Entries")
@@ -143,9 +153,14 @@ st.pyplot(fig)
 st.subheader("📅 Gantt Chart: Garage Schedule (Max 10 buses/day)")
 scheduled_data['Duration'] = pd.to_timedelta(1, unit='D')
 fig, ax = plt.subplots(figsize=(14, 6))
-colors = plt.cm.Reds(scheduled_data['Predicted'] / scheduled_data['Predicted'].max())
+
+# استخدم colormap ملون بناء على الاحتمالية
+norm = plt.Normalize(scheduled_data['Predicted'].min(), scheduled_data['Predicted'].max())
+colors = plt.cm.viridis(norm(scheduled_data['Predicted']))
+
 for i, (bus_id, row) in enumerate(scheduled_data.iterrows()):
     ax.barh(row['BusID'], row['Duration'].days, left=row['Date'], height=0.5, color=colors[i])
+
 ax.set_xlabel("Date")
 ax.set_ylabel("Bus ID")
 ax.xaxis.set_major_locator(mdates.DayLocator(interval=3))
