@@ -137,7 +137,7 @@ st.info(f"📌 {scheduled_data['BusID'].nunique()} buses were scheduled for main
 
 # ---- Bar chart ----
 st.subheader("📊 Garage Entry Counts for All Buses")
-fig, ax = plt.subplots(figsize=(12, 6))
+fig, ax = plt.subplots(figsize=(16, 6))
 colors = plt.cm.tab20.colors
 bar_colors = [colors[i % len(colors)] for i in range(len(garage_counts))]
 
@@ -145,8 +145,8 @@ bars = ax.bar(garage_counts['BusID'], garage_counts['GarageEntries'], color=bar_
 ax.set_title("Number of Times Each Bus Enters Garage (Max 10/day)")
 ax.set_xlabel("Bus ID")
 ax.set_ylabel("Garage Entries")
-ax.set_xticks(range(len(garage_counts['BusID'])))
-ax.set_xticklabels(garage_counts['BusID'], rotation=90, fontsize=8)
+ax.set_xticks(np.arange(len(garage_counts['BusID'])))
+ax.set_xticklabels(garage_counts['BusID'], rotation=45, fontsize=10, ha='right')
 
 for bar, count in zip(bars, garage_counts['GarageEntries']):
     ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.2, str(count), ha='center', va='bottom', fontsize=8)
@@ -156,7 +156,7 @@ st.pyplot(fig)
 # ---- Gantt Chart ----
 st.subheader("📅 Gantt Chart: Garage Schedule (Max 10 buses/day)")
 scheduled_data['Duration'] = pd.to_timedelta(1, unit='D')
-fig, ax = plt.subplots(figsize=(14, 6))
+fig, ax = plt.subplots(figsize=(16, max(6, len(unique_buses) * 0.4)))
 
 unique_buses = scheduled_data['BusID'].unique()
 bus_colors = {bus: plt.cm.tab20(i % 20) for i, bus in enumerate(unique_buses)}
@@ -166,6 +166,8 @@ for _, row in scheduled_data.iterrows():
 
 ax.set_xlabel("Date")
 ax.set_ylabel("Bus ID")
+ax.set_yticks(np.arange(len(unique_buses)))
+ax.set_yticklabels(unique_buses, fontsize=10)
 ax.xaxis.set_major_locator(mdates.DayLocator(interval=3))
 ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %d'))
 plt.xticks(rotation=45)
