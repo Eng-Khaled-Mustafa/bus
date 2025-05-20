@@ -103,11 +103,13 @@ st.metric(label="Maintenance Probability", value=f"{new_prob:.2%}", delta=f"{new
 
 # ---- Bar chart for garage entries ----
 st.subheader("📊 Garage Entry Counts for All Buses")
-fig, ax = plt.subplots(figsize=(12, 4))
+fig, ax = plt.subplots(figsize=(12, 6))
 ax.bar(garage_counts['BusID'], garage_counts['GarageEntries'], color='skyblue')
 ax.set_title("Number of Times Each Bus Enters Garage (Max 10/day)")
 ax.set_xlabel("Bus ID")
 ax.set_ylabel("Garage Entries")
+ax.set_xticks(range(len(garage_counts['BusID'])))
+ax.set_xticklabels(garage_counts['BusID'], rotation=90, fontsize=8)
 st.pyplot(fig)
 
 # ---- Gantt Chart for Garage Scheduling ----
@@ -125,4 +127,4 @@ plt.xticks(rotation=45)
 plt.title("Gantt Chart of Scheduled Maintenance Events (max 10 buses/day)")
 st.pyplot(fig)
 
-st.caption("تم احترام سعة الكراج بحيث لا تتجاوز 10 باصات يوميًا بناءً على ترتيب الأولوية والاحتمالية.")
+st.caption("")
