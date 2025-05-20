@@ -88,9 +88,13 @@ km = st.sidebar.slider("KM Today", 50, 400, int(default_row['KM_Today']))
 
 encoded_error = le.transform([error])[0]
 new_data = pd.DataFrame([[temp, oil, rpm, encoded_error, km]], columns=['EngineTemp', 'OilPressure', 'RPM', 'ErrorCode', 'KM_Today'])
-new_prob = round(
+new_prob_raw = (
     0.35 * (temp / 120) +
     0.35 * (1 - oil / 5) +
+    0.15 * (rpm / 2500) +
+    0.15 * (1 if error != 'None' else 0)
+)
+new_prob = round(new_prob_raw, 4) +
     0.15 * (rpm / 2500) +
     0.15 * (1 if error != 'None' else 0), 4
 ) +
@@ -115,6 +119,9 @@ X_updated = updated_data[['EngineTemp', 'OilPressure', 'RPM', 'ErrorCode', 'KM_T
 updated_data['Predicted'] = round(
     0.35 * (updated_data['EngineTemp'] / 120) +
     0.35 * (1 - updated_data['OilPressure'] / 5) +
+    0.15 * (updated_data['RPM'] / 2500) +
+    0.15 * (updated_data['ErrorCode'] != le.transform(['None'])[0]).astype(float), 4
+) +
     0.15 * (updated_data['RPM'] / 2500) +
     0.15 * (updated_data['ErrorCode'] != le.transform(['None'])[0]).astype(float), 4
 ) +
