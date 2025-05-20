@@ -156,7 +156,8 @@ st.pyplot(fig)
 # ---- Gantt Chart ----
 st.subheader("📅 Gantt Chart: Garage Schedule (Max 10 buses/day)")
 scheduled_data['Duration'] = pd.to_timedelta(1, unit='D')
-fig, ax = plt.subplots(figsize=(16, max(6, len(unique_buses) * 0.4)))
+unique_buses = scheduled_data['BusID'].unique()
+fig, ax = plt.subplots(figsize=(16, max(6, len(unique_buses) * 0.4))) * 0.4)))
 
 unique_buses = scheduled_data['BusID'].unique()
 bus_colors = {bus: plt.cm.tab20(i % 20) for i, bus in enumerate(unique_buses)}
