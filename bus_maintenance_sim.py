@@ -66,24 +66,10 @@ for bus in bus_ids:
 
 full_data = pd.DataFrame(records)
 full_data['ErrorCode'] = le.transform(full_data['ErrorCode'])
-X = full_data[['EngineTemp', 'OilPressure', 'RPM', 'ErrorCode', 'KM_Today']]
-full_data['Predicted'] = model.predict_proba(X)[:, 1]
-full_data['Scheduled'] = full_data['Predicted'] > 0.7
-
-
-
-
-
-# Count entries to garage
-garage_counts = scheduled_data.groupby('BusID').size().reset_index(name='GarageEntries')
-
-# تحديث full_data من النسخة المحدثة للعرض لاحقًا
-
 
 # ---- Interactive controls ----
 st.sidebar.header("🔧 Modify Bus Parameters")
 selected_bus = st.sidebar.selectbox("Select BusID", bus_ids)
-
 default_row = full_data[full_data['BusID'] == selected_bus].iloc[-1]
 
 error_options = ['None', 'P0300', 'P0420', 'P0171', 'P0401']
@@ -102,33 +88,31 @@ new_prob = model.predict_proba(new_data)[0][1]
 st.subheader(f"📈 Predicted Priority for {selected_bus}")
 st.metric(label="Maintenance Probability", value=f"{new_prob:.2%}", delta=f"{new_prob - default_row['Predicted']:.2%}")
 
-# إنشاء نسخة قابلة للتعديل من البيانات الأصلية
+# ---- Apply changes to selected bus for all days ----
 updated_data = full_data.copy()
-
-# تحديث بيانات الباص المحدد في جميع الأيام
 updated_data.loc[updated_data['BusID'] == selected_bus,
               ['EngineTemp', 'OilPressure', 'RPM', 'ErrorCode', 'KM_Today']] = [temp, oil, rpm, encoded_error, km]
 
-# إعادة التنبؤ لكامل البيانات بعد التعديل
+# Predict on updated data
 X_updated = updated_data[['EngineTemp', 'OilPressure', 'RPM', 'ErrorCode', 'KM_Today']]
 updated_data['Predicted'] = model.predict_proba(X_updated)[:, 1]
 updated_data['Scheduled'] = updated_data['Predicted'] > 0.7
 
-# إعادة جدولة الباصات: 10 فقط يوميًا
+# Schedule top 10 buses per day
 scheduled_data = updated_data[updated_data['Scheduled']].copy()
-
 scheduled_data = scheduled_data.sort_values(by=['Date', 'Predicted'], ascending=[True, False])
 scheduled_data['DailyCount'] = scheduled_data.groupby('Date').cumcount() + 1
 scheduled_data = scheduled_data[scheduled_data['DailyCount'] <= 10]
 
-# إعادة حساب عدد الدخول للكراج
-
-# إشعار إذا تم استبعاد الباص الحالي من الجدول النهائي
-if selected_bus not in scheduled_data['BusID'].values:
-    st.warning(f"🚨 Bus {selected_bus} has high priority but was not scheduled (other buses had higher priority on those days).")
+# Garage entry count
 garage_counts = scheduled_data.groupby('BusID').size().reset_index(name='GarageEntries')
 
-# ---- Bar chart for garage entries ----
+# Show warning if selected bus was excluded
+total_entries = garage_counts[garage_counts['BusID'] == selected_bus]['GarageEntries'].sum()
+if total_entries == 0:
+    st.warning(f"🚨 Bus {selected_bus} has high priority but was not scheduled (other buses had higher priority on those days).")
+
+# ---- Bar chart ----
 st.subheader("📊 Garage Entry Counts for All Buses")
 fig, ax = plt.subplots(figsize=(12, 6))
 ax.bar(garage_counts['BusID'], garage_counts['GarageEntries'], color='skyblue')
@@ -139,7 +123,7 @@ ax.set_xticks(range(len(garage_counts['BusID'])))
 ax.set_xticklabels(garage_counts['BusID'], rotation=90, fontsize=8)
 st.pyplot(fig)
 
-# ---- Gantt Chart for Garage Scheduling ----
+# ---- Gantt Chart ----
 st.subheader("📅 Gantt Chart: Garage Schedule (Max 10 buses/day)")
 scheduled_data['Duration'] = pd.to_timedelta(1, unit='D')
 fig, ax = plt.subplots(figsize=(14, 6))
