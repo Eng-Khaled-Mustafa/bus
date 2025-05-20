@@ -94,7 +94,8 @@ new_prob_raw = (
     0.15 * (rpm / 2500) +
     0.15 * (1 if error != 'None' else 0)
 )
-new_prob = round(new_prob_raw, 4) +
+new_prob = round(new_prob_raw, 4)
+ +
     0.15 * (rpm / 2500) +
     0.15 * (1 if error != 'None' else 0)
  +
