@@ -88,29 +88,8 @@ km = st.sidebar.slider("KM Today", 50, 400, int(default_row['KM_Today']))
 
 encoded_error = le.transform([error])[0]
 new_data = pd.DataFrame([[temp, oil, rpm, encoded_error, km]], columns=['EngineTemp', 'OilPressure', 'RPM', 'ErrorCode', 'KM_Today'])
-new_prob_raw = (
-    0.35 * (temp / 120) +
-    0.35 * (1 - oil / 5) +
-    0.15 * (rpm / 2500) +
-    0.15 * (1 if error != 'None' else 0)
-)
-new_prob_raw = (
-    0.35 * (temp / 120) +
-    0.35 * (1 - oil / 5) +
-    0.15 * (rpm / 2500) +
-    0.15 * (1 if error != 'None' else 0)
-)
-new_prob = round(new_prob_raw, 4) +
-    0.15 * (rpm / 2500) +
-    0.15 * (1 if error != 'None' else 0), 4
-) + (
-    0.15 * (rpm / 2500) +
-    0.15 * (1 if error != 'None' else 0), 4
-) + (
-    0.3 * (1 - oil / 5) +
-    0.2 * (rpm / 2500) +
-    0.2 * (1 if error != 'None' else 0)
-)
+new_prob_raw = 0.35 * (temp / 120) + 0.35 * (1 - oil / 5) + 0.15 * (rpm / 2500) + 0.15 * (1 if error != 'None' else 0)
+new_prob = round(new_prob_raw, 4)
 
 st.subheader(f"📈 Predicted Priority for {selected_bus}")
 st.metric(label="Maintenance Probability", value=f"{new_prob:.2%}", delta=f"{new_prob - default_row['Predicted']:.2%}")
@@ -122,36 +101,17 @@ updated_data.loc[updated_data['BusID'] == selected_bus,
 
 # Predict on updated data
 X_updated = updated_data[['EngineTemp', 'OilPressure', 'RPM', 'ErrorCode', 'KM_Today']]
-updated_data['Predicted'] = round(
-    0.35 * (updated_data['EngineTemp'] / 120) +
-    0.35 * (1 - updated_data['OilPressure'] / 5) +
-    0.15 * (updated_data['RPM'] / 2500) +
-    0.15 * (updated_data['ErrorCode'] != le.transform(['None'])[0]).astype(float), 4
-) + (
-    0.35 * (1 - updated_data['OilPressure'] / 5) +
-    0.15 * (updated_data['RPM'] / 2500) +
-    0.15 * (updated_data['ErrorCode'] != le.transform(['None'])[0]).astype(float), 4
-) + (
-    0.15 * (updated_data['RPM'] / 2500) +
-    0.15 * (updated_data['ErrorCode'] != le.transform(['None'])[0]).astype(float), 4
-) + (
-    0.15 * (updated_data['RPM'] / 2500) +
-    0.15 * (updated_data['ErrorCode'] != le.transform(['None'])[0]).astype(float), 4
-) + (
-    0.3 * (1 - updated_data['OilPressure'] / 5) +
-    0.2 * (updated_data['RPM'] / 2500) +
-    0.2 * (updated_data['ErrorCode'] != le.transform(['None'])[0]).astype(float)
-)
+updated_data['Predicted'] = round(0.35 * (updated_data['EngineTemp'] / 120) + 0.35 * (1 - updated_data['OilPressure'] / 5) + 0.15 * (updated_data['RPM'] / 2500) + 0.15 * (updated_data['ErrorCode'] != le.transform(['None'])[0]).astype(float), 4)
+
 # تخصيص عدد الأيام بناءً على الاحتمالية:
 threshold = 0.7
 updated_data['Scheduled'] = False
 
 for bus_id, group in updated_data.groupby('BusID'):
     high_risk_days = group[group['Predicted'] > threshold].sort_values(by='Predicted', ascending=False)
-    n_days = min(5 + int(high_risk_days['Predicted'].mean() * 10), 30)  # عدد الأيام حسب المتوسط
+    n_days = min(5 + int(high_risk_days['Predicted'].mean() * 10), 30)
     selected_days = high_risk_days.head(n_days).index
     updated_data.loc[selected_days, 'Scheduled'] = True
-
 
 # Schedule top 10 buses per day
 scheduled_data = updated_data[updated_data['Scheduled']].copy()
@@ -180,7 +140,6 @@ ax.set_ylabel("Garage Entries")
 ax.set_xticks(range(len(garage_counts['BusID'])))
 ax.set_xticklabels(garage_counts['BusID'], rotation=90, fontsize=8)
 
-# أضف عدد الأيام فوق كل عمود
 for bar, count in zip(bars, garage_counts['GarageEntries']):
     ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.2, str(count), ha='center', va='bottom', fontsize=8)
 
@@ -191,7 +150,6 @@ st.subheader("📅 Gantt Chart: Garage Schedule (Max 10 buses/day)")
 scheduled_data['Duration'] = pd.to_timedelta(1, unit='D')
 fig, ax = plt.subplots(figsize=(14, 6))
 
-# لون مميز لكل باص
 unique_buses = scheduled_data['BusID'].unique()
 bus_colors = {bus: plt.cm.tab20(i % 20) for i, bus in enumerate(unique_buses)}
 
