@@ -88,7 +88,12 @@ km = st.sidebar.slider("KM Today", 50, 400, int(default_row['KM_Today']))
 
 encoded_error = le.transform([error])[0]
 new_data = pd.DataFrame([[temp, oil, rpm, encoded_error, km]], columns=['EngineTemp', 'OilPressure', 'RPM', 'ErrorCode', 'KM_Today'])
-new_prob = model.predict_proba(new_data)[0][1]
+new_prob = (
+    0.3 * (temp / 120) +
+    0.3 * (1 - oil / 5) +
+    0.2 * (rpm / 2500) +
+    0.2 * (1 if error != 'None' else 0)
+)
 
 st.subheader(f"📈 Predicted Priority for {selected_bus}")
 st.metric(label="Maintenance Probability", value=f"{new_prob:.2%}", delta=f"{new_prob - default_row['Predicted']:.2%}")
@@ -100,7 +105,12 @@ updated_data.loc[updated_data['BusID'] == selected_bus,
 
 # Predict on updated data
 X_updated = updated_data[['EngineTemp', 'OilPressure', 'RPM', 'ErrorCode', 'KM_Today']]
-updated_data['Predicted'] = model.predict_proba(X_updated)[:, 1]
+updated_data['Predicted'] = (
+    0.3 * (updated_data['EngineTemp'] / 120) +
+    0.3 * (1 - updated_data['OilPressure'] / 5) +
+    0.2 * (updated_data['RPM'] / 2500) +
+    0.2 * (updated_data['ErrorCode'] != le.transform(['None'])[0]).astype(float)
+)
 scheduled_mask = (updated_data['Predicted'] > 0.7) & (np.random.rand(len(updated_data)) < 0.3)
 updated_data['Scheduled'] = scheduled_mask
 
