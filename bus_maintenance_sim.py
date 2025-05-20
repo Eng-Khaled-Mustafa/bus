@@ -109,7 +109,7 @@ updated_data['Predicted'] = (
 ).round(4)
 
 # تخصيص عدد الأيام بناءً على الاحتمالية:
-threshold = 0.7
+threshold = st.sidebar.slider("🚨 Maintenance Threshold", 0.0, 1.0, 0.7, 0.05)
 updated_data['Scheduled'] = False
 
 for bus_id, group in updated_data.groupby('BusID'):
@@ -132,6 +132,8 @@ garage_counts = scheduled_data.groupby('BusID').size().reset_index(name='GarageE
 total_entries = garage_counts[garage_counts['BusID'] == selected_bus]['GarageEntries'].sum()
 if total_entries == 0:
     st.warning(f"🚨 Bus {selected_bus} has high priority but was not scheduled (other buses had higher priority on those days).")
+
+st.info(f"📌 {scheduled_data['BusID'].nunique()} buses were scheduled for maintenance based on the selected threshold.")
 
 # ---- Bar chart ----
 st.subheader("📊 Garage Entry Counts for All Buses")
