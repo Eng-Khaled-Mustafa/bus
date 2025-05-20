@@ -101,7 +101,8 @@ updated_data.loc[updated_data['BusID'] == selected_bus,
 # Predict on updated data
 X_updated = updated_data[['EngineTemp', 'OilPressure', 'RPM', 'ErrorCode', 'KM_Today']]
 updated_data['Predicted'] = model.predict_proba(X_updated)[:, 1]
-updated_data['Scheduled'] = updated_data['Predicted'] > 0.7
+scheduled_mask = (updated_data['Predicted'] > 0.7) & (np.random.rand(len(updated_data)) < 0.3)
+updated_data['Scheduled'] = scheduled_mask
 
 # Schedule top 10 buses per day
 scheduled_data = updated_data[updated_data['Scheduled']].copy()
