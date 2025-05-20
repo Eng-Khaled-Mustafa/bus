@@ -94,8 +94,23 @@ new_prob_raw = (
     0.15 * (rpm / 2500) +
     0.15 * (1 if error != 'None' else 0)
 )
-new_prob = round(new_prob_raw, 4) + 0.15 * (rpm / 2500) + 0.15 * (1 if error != 'None' else 0)+ 0.15 * (rpm / 2500) + 0.15 * (1 if error != 'None' else 0) + 0.3 * (1 - oil / 5) + 0.2 * (rpm / 2500) + 0.2 * (1 if error != 'None' else 0)
-
+new_prob_raw = (
+    0.35 * (temp / 120) +
+    0.35 * (1 - oil / 5) +
+    0.15 * (rpm / 2500) +
+    0.15 * (1 if error != 'None' else 0)
+)
+new_prob = round(new_prob_raw, 4) +
+    0.15 * (rpm / 2500) +
+    0.15 * (1 if error != 'None' else 0), 4
+) + (
+    0.15 * (rpm / 2500) +
+    0.15 * (1 if error != 'None' else 0), 4
+) + (
+    0.3 * (1 - oil / 5) +
+    0.2 * (rpm / 2500) +
+    0.2 * (1 if error != 'None' else 0)
+)
 
 st.subheader(f"📈 Predicted Priority for {selected_bus}")
 st.metric(label="Maintenance Probability", value=f"{new_prob:.2%}", delta=f"{new_prob - default_row['Predicted']:.2%}")
@@ -109,6 +124,10 @@ updated_data.loc[updated_data['BusID'] == selected_bus,
 X_updated = updated_data[['EngineTemp', 'OilPressure', 'RPM', 'ErrorCode', 'KM_Today']]
 updated_data['Predicted'] = round(
     0.35 * (updated_data['EngineTemp'] / 120) +
+    0.35 * (1 - updated_data['OilPressure'] / 5) +
+    0.15 * (updated_data['RPM'] / 2500) +
+    0.15 * (updated_data['ErrorCode'] != le.transform(['None'])[0]).astype(float), 4
+) + (
     0.35 * (1 - updated_data['OilPressure'] / 5) +
     0.15 * (updated_data['RPM'] / 2500) +
     0.15 * (updated_data['ErrorCode'] != le.transform(['None'])[0]).astype(float), 4
@@ -132,7 +151,7 @@ for bus_id, group in updated_data.groupby('BusID'):
     n_days = min(5 + int(high_risk_days['Predicted'].mean() * 10), 30)  # عدد الأيام حسب المتوسط
     selected_days = high_risk_days.head(n_days).index
     updated_data.loc[selected_days, 'Scheduled'] = True
-updated_data['Scheduled'] = scheduled_mask
+
 
 # Schedule top 10 buses per day
 scheduled_data = updated_data[updated_data['Scheduled']].copy()
