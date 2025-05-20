@@ -114,7 +114,8 @@ updated_data['Scheduled'] = False
 
 for bus_id, group in updated_data.groupby('BusID'):
     high_risk_days = group[group['Predicted'] > threshold].sort_values(by='Predicted', ascending=False)
-    n_days = min(5 + int(high_risk_days['Predicted'].mean(skipna=True) * 10), 30)
+    mean_val = high_risk_days['Predicted'].mean()
+n_days = min(5 + int(mean_val * 10) if not pd.isna(mean_val) else 0, 30)
     selected_days = high_risk_days.head(n_days).index
     updated_data.loc[selected_days, 'Scheduled'] = True
 
