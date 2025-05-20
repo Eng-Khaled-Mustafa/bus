@@ -72,9 +72,7 @@ full_data['Scheduled'] = full_data['Predicted'] > 0.7
 
 
 
-scheduled_data = scheduled_data.sort_values(by=['Date', 'Predicted'], ascending=[True, False])
-scheduled_data['DailyCount'] = scheduled_data.groupby('Date').cumcount() + 1
-scheduled_data = scheduled_data[scheduled_data['DailyCount'] <= 10]
+
 
 # Count entries to garage
 garage_counts = scheduled_data.groupby('BusID').size().reset_index(name='GarageEntries')
