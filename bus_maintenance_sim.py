@@ -71,7 +71,7 @@ full_data['Predicted'] = model.predict_proba(X)[:, 1]
 full_data['Scheduled'] = full_data['Predicted'] > 0.7
 
 # جدولة لا تتعدى 10 باصات يوميًا
-scheduled_data = full_data[full_data['Scheduled']].copy()
+scheduled_data = updated_data[updated_data['Scheduled']].copy()
 scheduled_data = scheduled_data.sort_values(by=['Date', 'Predicted'], ascending=[True, False])
 scheduled_data['DailyCount'] = scheduled_data.groupby('Date').cumcount() + 1
 scheduled_data = scheduled_data[scheduled_data['DailyCount'] <= 10]
@@ -80,7 +80,7 @@ scheduled_data = scheduled_data[scheduled_data['DailyCount'] <= 10]
 garage_counts = scheduled_data.groupby('BusID').size().reset_index(name='GarageEntries')
 
 # تحديث full_data من النسخة المحدثة للعرض لاحقًا
-full_data = updated_data.copy().size().reset_index(name='GarageEntries')
+
 
 # ---- Interactive controls ----
 st.sidebar.header("🔧 Modify Bus Parameters")
@@ -156,4 +156,4 @@ plt.xticks(rotation=45)
 plt.title("Gantt Chart of Scheduled Maintenance Events (max 10 buses/day)")
 st.pyplot(fig)
 
-st.caption("")
+st.caption("تم احترام سعة الكراج بحيث لا تتجاوز 10 باصات يوميًا بناءً على ترتيب الأولوية والاحتمالية.")
