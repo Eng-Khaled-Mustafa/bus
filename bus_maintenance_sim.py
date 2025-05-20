@@ -102,10 +102,8 @@ st.subheader(f"📈 Predicted Priority for {selected_bus}")
 st.metric(label="Maintenance Probability", value=f"{new_prob:.2%}", delta=f"{new_prob - default_row['Predicted']:.2%}")
 
 # تحديث بيانات الباص المحدد عند التغيير
-full_data.loc[(full_data['BusID'] == selected_bus) & (full_data['Date'] == default_row['Date']),
+full_data.loc[full_data['BusID'] == selected_bus,
               ['EngineTemp', 'OilPressure', 'RPM', 'ErrorCode', 'KM_Today']] = [temp, oil, rpm, encoded_error, km]
-
-# إعادة التنبؤ لكامل البيانات بعد التعديل
 X = full_data[['EngineTemp', 'OilPressure', 'RPM', 'ErrorCode', 'KM_Today']]
 full_data['Predicted'] = model.predict_proba(X)[:, 1]
 full_data['Scheduled'] = full_data['Predicted'] > 0.7
@@ -134,9 +132,9 @@ st.pyplot(fig)
 st.subheader("📅 Gantt Chart: Garage Schedule (Max 10 buses/day)")
 scheduled_data['Duration'] = pd.to_timedelta(1, unit='D')
 fig, ax = plt.subplots(figsize=(14, 6))
-for bus_id in scheduled_data['BusID'].unique():
-    bus_sched = scheduled_data[scheduled_data['BusID'] == bus_id]
-    ax.barh(bus_id, bus_sched['Duration'].dt.days, left=bus_sched['Date'], height=0.5)
+colors = plt.cm.Reds(scheduled_data['Predicted'] / scheduled_data['Predicted'].max())
+for i, (bus_id, row) in enumerate(scheduled_data.iterrows()):
+    ax.barh(row['BusID'], row['Duration'].days, left=row['Date'], height=0.5, color=colors[i])
 ax.set_xlabel("Date")
 ax.set_ylabel("Bus ID")
 ax.xaxis.set_major_locator(mdates.DayLocator(interval=3))
@@ -145,4 +143,4 @@ plt.xticks(rotation=45)
 plt.title("Gantt Chart of Scheduled Maintenance Events (max 10 buses/day)")
 st.pyplot(fig)
 
-st.caption("")
+st.caption("تم احترام سعة الكراج بحيث لا تتجاوز 10 باصات يوميًا بناءً على ترتيب الأولوية والاحتمالية.")
