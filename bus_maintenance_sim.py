@@ -94,6 +94,9 @@ new_prob = round(
     0.15 * (rpm / 2500) +
     0.15 * (1 if error != 'None' else 0), 4
 ) +
+    0.15 * (rpm / 2500) +
+    0.15 * (1 if error != 'None' else 0), 4
+) +
     0.3 * (1 - oil / 5) +
     0.2 * (rpm / 2500) +
     0.2 * (1 if error != 'None' else 0)
@@ -115,11 +118,22 @@ updated_data['Predicted'] = round(
     0.15 * (updated_data['RPM'] / 2500) +
     0.15 * (updated_data['ErrorCode'] != le.transform(['None'])[0]).astype(float), 4
 ) +
+    0.15 * (updated_data['RPM'] / 2500) +
+    0.15 * (updated_data['ErrorCode'] != le.transform(['None'])[0]).astype(float), 4
+) +
     0.3 * (1 - updated_data['OilPressure'] / 5) +
     0.2 * (updated_data['RPM'] / 2500) +
     0.2 * (updated_data['ErrorCode'] != le.transform(['None'])[0]).astype(float)
 )
-scheduled_mask = (updated_data['Predicted'] > 0.7) & (np.random.rand(len(updated_data)) < 0.3)
+# تخصيص عدد الأيام بناءً على الاحتمالية:
+threshold = 0.7
+updated_data['Scheduled'] = False
+
+for bus_id, group in updated_data.groupby('BusID'):
+    high_risk_days = group[group['Predicted'] > threshold].sort_values(by='Predicted', ascending=False)
+    n_days = min(5 + int(high_risk_days['Predicted'].mean() * 10), 30)  # عدد الأيام حسب المتوسط
+    selected_days = high_risk_days.head(n_days).index
+    updated_data.loc[selected_days, 'Scheduled'] = True
 updated_data['Scheduled'] = scheduled_mask
 
 # Schedule top 10 buses per day
@@ -141,12 +155,18 @@ st.subheader("📊 Garage Entry Counts for All Buses")
 fig, ax = plt.subplots(figsize=(12, 6))
 colors = plt.cm.tab20.colors
 bar_colors = [colors[i % len(colors)] for i in range(len(garage_counts))]
-ax.bar(garage_counts['BusID'], garage_counts['GarageEntries'], color=bar_colors)
+
+bars = ax.bar(garage_counts['BusID'], garage_counts['GarageEntries'], color=bar_colors)
 ax.set_title("Number of Times Each Bus Enters Garage (Max 10/day)")
 ax.set_xlabel("Bus ID")
 ax.set_ylabel("Garage Entries")
 ax.set_xticks(range(len(garage_counts['BusID'])))
 ax.set_xticklabels(garage_counts['BusID'], rotation=90, fontsize=8)
+
+# أضف عدد الأيام فوق كل عمود
+for bar, count in zip(bars, garage_counts['GarageEntries']):
+    ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.2, str(count), ha='center', va='bottom', fontsize=8)
+
 st.pyplot(fig)
 
 # ---- Gantt Chart ----
@@ -154,12 +174,12 @@ st.subheader("📅 Gantt Chart: Garage Schedule (Max 10 buses/day)")
 scheduled_data['Duration'] = pd.to_timedelta(1, unit='D')
 fig, ax = plt.subplots(figsize=(14, 6))
 
-# استخدم colormap ملون بناء على الاحتمالية
-norm = plt.Normalize(scheduled_data['Predicted'].min(), scheduled_data['Predicted'].max())
-colors = plt.cm.viridis(norm(scheduled_data['Predicted']))
+# لون مميز لكل باص
+unique_buses = scheduled_data['BusID'].unique()
+bus_colors = {bus: plt.cm.tab20(i % 20) for i, bus in enumerate(unique_buses)}
 
-for i, (bus_id, row) in enumerate(scheduled_data.iterrows()):
-    ax.barh(row['BusID'], row['Duration'].days, left=row['Date'], height=0.5, color=colors[i])
+for _, row in scheduled_data.iterrows():
+    ax.barh(row['BusID'], row['Duration'].days, left=row['Date'], height=0.5, color=bus_colors[row['BusID']])
 
 ax.set_xlabel("Date")
 ax.set_ylabel("Bus ID")
