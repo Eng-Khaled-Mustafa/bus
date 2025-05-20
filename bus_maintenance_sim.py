@@ -65,10 +65,8 @@ for bus in bus_ids:
         records.append(rec)
 
 full_data = pd.DataFrame(records)
-
-full_data['ErrorCode'] = le.transform(full_data['ErrorCode'])  # Ensure same column used
+full_data['ErrorCode'] = le.transform(full_data['ErrorCode'])
 X = full_data[['EngineTemp', 'OilPressure', 'RPM', 'ErrorCode', 'KM_Today']]
-
 full_data['Predicted'] = model.predict_proba(X)[:, 1]
 full_data['Scheduled'] = full_data['Predicted'] > 0.7
 
@@ -87,14 +85,17 @@ selected_bus = st.sidebar.selectbox("Select BusID", bus_ids)
 
 default_row = full_data[full_data['BusID'] == selected_bus].iloc[-1]
 
+error_options = ['None', 'P0300', 'P0420', 'P0171', 'P0401']
+current_error_label = le.inverse_transform([int(default_row['ErrorCode'])])[0]
+
 temp = st.sidebar.slider("Engine Temp", 60.0, 120.0, float(default_row['EngineTemp']))
 oil = st.sidebar.slider("Oil Pressure", 1.0, 5.0, float(default_row['OilPressure']))
 rpm = st.sidebar.slider("RPM", 600, 2500, int(default_row['RPM']))
-error = st.sidebar.selectbox("Error Code", ['None', 'P0300', 'P0420', 'P0171', 'P0401'], index=le.inverse_transform([int(default_row['ErrorCodeEncoded'])])[0:].tolist().index(default_row['ErrorCode']))
+error = st.sidebar.selectbox("Error Code", error_options, index=error_options.index(current_error_label))
 km = st.sidebar.slider("KM Today", 50, 400, int(default_row['KM_Today']))
 
 encoded_error = le.transform([error])[0]
-new_data = pd.DataFrame([[temp, oil, rpm, encoded_error, km]], columns=['EngineTemp', 'OilPressure', 'RPM', 'ErrorCodeEncoded', 'KM_Today'])
+new_data = pd.DataFrame([[temp, oil, rpm, encoded_error, km]], columns=['EngineTemp', 'OilPressure', 'RPM', 'ErrorCode', 'KM_Today'])
 new_prob = model.predict_proba(new_data)[0][1]
 
 st.subheader(f"📈 Predicted Priority for {selected_bus}")
