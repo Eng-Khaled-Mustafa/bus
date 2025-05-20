@@ -70,6 +70,18 @@ X = full_data[['EngineTemp', 'OilPressure', 'RPM', 'ErrorCode', 'KM_Today']]
 full_data['Predicted'] = model.predict_proba(X)[:, 1]
 full_data['Scheduled'] = full_data['Predicted'] > 0.7
 
+# إنشاء نسخة قابلة للتعديل من البيانات الأصلية
+updated_data = full_data.copy()
+
+# تحديث بيانات الباص المحدد في جميع الأيام
+updated_data.loc[updated_data['BusID'] == selected_bus,
+              ['EngineTemp', 'OilPressure', 'RPM', 'ErrorCode', 'KM_Today']] = [temp, oil, rpm, encoded_error, km]
+
+# إعادة التنبؤ لكامل البيانات بعد التعديل
+X_updated = updated_data[['EngineTemp', 'OilPressure', 'RPM', 'ErrorCode', 'KM_Today']]
+updated_data['Predicted'] = model.predict_proba(X_updated)[:, 1]
+updated_data['Scheduled'] = updated_data['Predicted'] > 0.7
+
 # جدولة لا تتعدى 10 باصات يوميًا
 scheduled_data = updated_data[updated_data['Scheduled']].copy()
 scheduled_data = scheduled_data.sort_values(by=['Date', 'Predicted'], ascending=[True, False])
