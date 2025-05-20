@@ -79,6 +79,9 @@ scheduled_data = scheduled_data[scheduled_data['DailyCount'] <= 10]
 # Count entries to garage
 garage_counts = scheduled_data.groupby('BusID').size().reset_index(name='GarageEntries')
 
+# تحديث full_data من النسخة المحدثة للعرض لاحقًا
+full_data = updated_data.copy().size().reset_index(name='GarageEntries')
+
 # ---- Interactive controls ----
 st.sidebar.header("🔧 Modify Bus Parameters")
 selected_bus = st.sidebar.selectbox("Select BusID", bus_ids)
@@ -101,14 +104,20 @@ new_prob = model.predict_proba(new_data)[0][1]
 st.subheader(f"📈 Predicted Priority for {selected_bus}")
 st.metric(label="Maintenance Probability", value=f"{new_prob:.2%}", delta=f"{new_prob - default_row['Predicted']:.2%}")
 
-# تحديث بيانات الباص المحدد عند التغيير
-full_data.loc[full_data['BusID'] == selected_bus,
+# إنشاء نسخة قابلة للتعديل من البيانات الأصلية
+updated_data = full_data.copy()
+
+# تحديث بيانات الباص المحدد في جميع الأيام
+updated_data.loc[updated_data['BusID'] == selected_bus,
               ['EngineTemp', 'OilPressure', 'RPM', 'ErrorCode', 'KM_Today']] = [temp, oil, rpm, encoded_error, km]
-X = full_data[['EngineTemp', 'OilPressure', 'RPM', 'ErrorCode', 'KM_Today']]
-full_data['Predicted'] = model.predict_proba(X)[:, 1]
-full_data['Scheduled'] = full_data['Predicted'] > 0.7
+
+# إعادة التنبؤ لكامل البيانات بعد التعديل
+X_updated = updated_data[['EngineTemp', 'OilPressure', 'RPM', 'ErrorCode', 'KM_Today']]
+updated_data['Predicted'] = model.predict_proba(X_updated)[:, 1]
+updated_data['Scheduled'] = updated_data['Predicted'] > 0.7
 
 # إعادة جدولة الباصات: 10 فقط يوميًا
+scheduled_data = updated_data[updated_data['Scheduled']].copy()
 scheduled_data = full_data[full_data['Scheduled']].copy()
 scheduled_data = scheduled_data.sort_values(by=['Date', 'Predicted'], ascending=[True, False])
 scheduled_data['DailyCount'] = scheduled_data.groupby('Date').cumcount() + 1
@@ -147,4 +156,4 @@ plt.xticks(rotation=45)
 plt.title("Gantt Chart of Scheduled Maintenance Events (max 10 buses/day)")
 st.pyplot(fig)
 
-st.caption("تم احترام سعة الكراج بحيث لا تتجاوز 10 باصات يوميًا بناءً على ترتيب الأولوية والاحتمالية.")
+st.caption("")
