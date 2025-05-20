@@ -101,7 +101,12 @@ updated_data.loc[updated_data['BusID'] == selected_bus,
 
 # Predict on updated data
 X_updated = updated_data[['EngineTemp', 'OilPressure', 'RPM', 'ErrorCode', 'KM_Today']]
-updated_data['Predicted'] = round(0.35 * (updated_data['EngineTemp'] / 120) + 0.35 * (1 - updated_data['OilPressure'] / 5) + 0.15 * (updated_data['RPM'] / 2500) + 0.15 * (updated_data['ErrorCode'] != le.transform(['None'])[0]).astype(float), 4)
+updated_data['Predicted'] = (
+    0.35 * (updated_data['EngineTemp'] / 120) +
+    0.35 * (1 - updated_data['OilPressure'] / 5) +
+    0.15 * (updated_data['RPM'] / 2500) +
+    0.15 * (updated_data['ErrorCode'] != le.transform(['None'])[0]).astype(float)
+).round(4)
 
 # تخصيص عدد الأيام بناءً على الاحتمالية:
 threshold = 0.7
