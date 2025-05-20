@@ -67,6 +67,11 @@ for bus in bus_ids:
 full_data = pd.DataFrame(records)
 full_data['ErrorCode'] = le.transform(full_data['ErrorCode'])
 
+# ---- Predict initial probabilities before controls ----
+full_data['Predicted'] = model.predict_proba(
+    full_data[['EngineTemp', 'OilPressure', 'RPM', 'ErrorCode', 'KM_Today']]
+)[:, 1]
+
 # ---- Interactive controls ----
 st.sidebar.header("🔧 Modify Bus Parameters")
 selected_bus = st.sidebar.selectbox("Select BusID", bus_ids)
