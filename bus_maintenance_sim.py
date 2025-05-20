@@ -112,13 +112,13 @@ updated_data['Predicted'] = round(
     0.35 * (1 - updated_data['OilPressure'] / 5) +
     0.15 * (updated_data['RPM'] / 2500) +
     0.15 * (updated_data['ErrorCode'] != le.transform(['None'])[0]).astype(float), 4
-) +
+) + (
     0.15 * (updated_data['RPM'] / 2500) +
     0.15 * (updated_data['ErrorCode'] != le.transform(['None'])[0]).astype(float), 4
-) +
+) + (
     0.15 * (updated_data['RPM'] / 2500) +
     0.15 * (updated_data['ErrorCode'] != le.transform(['None'])[0]).astype(float), 4
-) +
+) + (
     0.3 * (1 - updated_data['OilPressure'] / 5) +
     0.2 * (updated_data['RPM'] / 2500) +
     0.2 * (updated_data['ErrorCode'] != le.transform(['None'])[0]).astype(float)
