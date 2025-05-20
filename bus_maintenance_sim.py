@@ -65,8 +65,10 @@ for bus in bus_ids:
         records.append(rec)
 
 full_data = pd.DataFrame(records)
-full_data['ErrorCodeEncoded'] = le.transform(full_data['ErrorCode'])
-X = full_data[['EngineTemp', 'OilPressure', 'RPM', 'ErrorCodeEncoded', 'KM_Today']]
+
+full_data['ErrorCode'] = le.transform(full_data['ErrorCode'])  # Ensure same column used
+X = full_data[['EngineTemp', 'OilPressure', 'RPM', 'ErrorCode', 'KM_Today']]
+
 full_data['Predicted'] = model.predict_proba(X)[:, 1]
 full_data['Scheduled'] = full_data['Predicted'] > 0.7
 
