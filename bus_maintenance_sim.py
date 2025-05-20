@@ -101,6 +101,24 @@ new_prob = model.predict_proba(new_data)[0][1]
 st.subheader(f"📈 Predicted Priority for {selected_bus}")
 st.metric(label="Maintenance Probability", value=f"{new_prob:.2%}", delta=f"{new_prob - default_row['Predicted']:.2%}")
 
+# تحديث بيانات الباص المحدد عند التغيير
+full_data.loc[(full_data['BusID'] == selected_bus) & (full_data['Date'] == default_row['Date']),
+              ['EngineTemp', 'OilPressure', 'RPM', 'ErrorCode', 'KM_Today']] = [temp, oil, rpm, encoded_error, km]
+
+# إعادة التنبؤ لكامل البيانات بعد التعديل
+X = full_data[['EngineTemp', 'OilPressure', 'RPM', 'ErrorCode', 'KM_Today']]
+full_data['Predicted'] = model.predict_proba(X)[:, 1]
+full_data['Scheduled'] = full_data['Predicted'] > 0.7
+
+# إعادة جدولة الباصات: 10 فقط يوميًا
+scheduled_data = full_data[full_data['Scheduled']].copy()
+scheduled_data = scheduled_data.sort_values(by=['Date', 'Predicted'], ascending=[True, False])
+scheduled_data['DailyCount'] = scheduled_data.groupby('Date').cumcount() + 1
+scheduled_data = scheduled_data[scheduled_data['DailyCount'] <= 10]
+
+# إعادة حساب عدد الدخول للكراج
+garage_counts = scheduled_data.groupby('BusID').size().reset_index(name='GarageEntries')
+
 # ---- Bar chart for garage entries ----
 st.subheader("📊 Garage Entry Counts for All Buses")
 fig, ax = plt.subplots(figsize=(12, 6))
