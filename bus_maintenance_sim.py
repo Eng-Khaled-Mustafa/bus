@@ -71,8 +71,7 @@ full_data['Predicted'] = model.predict_proba(X)[:, 1]
 full_data['Scheduled'] = full_data['Predicted'] > 0.7
 
 
-# جدولة لا تتعدى 10 باصات يوميًا
-scheduled_data = updated_data[updated_data['Scheduled']].copy()
+
 scheduled_data = scheduled_data.sort_values(by=['Date', 'Predicted'], ascending=[True, False])
 scheduled_data['DailyCount'] = scheduled_data.groupby('Date').cumcount() + 1
 scheduled_data = scheduled_data[scheduled_data['DailyCount'] <= 10]
