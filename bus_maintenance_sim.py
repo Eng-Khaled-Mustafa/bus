@@ -96,15 +96,15 @@ new_prob_raw = (
 )
 new_prob = round(new_prob_raw, 4) +
     0.15 * (rpm / 2500) +
-    0.15 * (1 if error != 'None' else 0), 4
-) +
+    0.15 * (1 if error != 'None' else 0)
+ +
     0.15 * (rpm / 2500) +
-    0.15 * (1 if error != 'None' else 0), 4
-) +
+    0.15 * (1 if error != 'None' else 0)
+ +
     0.3 * (1 - oil / 5) +
     0.2 * (rpm / 2500) +
     0.2 * (1 if error != 'None' else 0)
-)
+
 
 st.subheader(f"📈 Predicted Priority for {selected_bus}")
 st.metric(label="Maintenance Probability", value=f"{new_prob:.2%}", delta=f"{new_prob - default_row['Predicted']:.2%}")
